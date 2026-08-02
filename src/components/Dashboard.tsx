@@ -62,7 +62,8 @@ export default function Dashboard({ initialTickets }: { initialTickets: Ticket[]
           t.numero.toLowerCase().includes(q) ||
           t.protocolo.toLowerCase().includes(q) ||
           (t.chamado_suporte ?? "").toLowerCase().includes(q) ||
-          (t.chamado_telecom ?? "").toLowerCase().includes(q)
+          (t.chamado_telecom ?? "").toLowerCase().includes(q) ||
+          t.solicitante.toLowerCase().includes(q)
         );
       })
       .sort((a, b) => new Date(b.criado_em).getTime() - new Date(a.criado_em).getTime());
@@ -110,7 +111,7 @@ export default function Dashboard({ initialTickets }: { initialTickets: Ticket[]
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Buscar por protocolo, número da telecom ou do suporte..."
+          placeholder="Buscar por solicitante, protocolo, número da telecom ou do suporte..."
           className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:border-teal-500 focus:outline-none sm:max-w-xs"
         />
         <div className="flex flex-wrap gap-2">
