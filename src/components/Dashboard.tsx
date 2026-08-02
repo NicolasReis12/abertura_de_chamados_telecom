@@ -57,7 +57,13 @@ export default function Dashboard({ initialTickets }: { initialTickets: Ticket[]
       .filter((t) => (statusFilter === "todos" ? true : t.status === statusFilter))
       .filter((t) => {
         if (!q) return true;
-        return t.operadora.toLowerCase().includes(q) || t.numero.toLowerCase().includes(q);
+        return (
+          (t.operadora_numero ?? "").toLowerCase().includes(q) ||
+          t.numero.toLowerCase().includes(q) ||
+          t.protocolo.toLowerCase().includes(q) ||
+          (t.chamado_suporte ?? "").toLowerCase().includes(q) ||
+          (t.chamado_telecom ?? "").toLowerCase().includes(q)
+        );
       })
       .sort((a, b) => new Date(b.criado_em).getTime() - new Date(a.criado_em).getTime());
   }, [tickets, statusFilter, search]);
@@ -68,6 +74,15 @@ export default function Dashboard({ initialTickets }: { initialTickets: Ticket[]
     setTickets((current) => (current.some((t) => t.id === ticket.id) ? current : [ticket, ...current]));
     setShowForm(false);
     setSelectedId(ticket.id);
+  }
+
+  function handleTicketUpdated(ticket: Ticket) {
+    setTickets((current) => current.map((t) => (t.id === ticket.id ? ticket : t)));
+  }
+
+  function handleTicketDeleted(id: string) {
+    setTickets((current) => current.filter((t) => t.id !== id));
+    setSelectedId((current) => (current === id ? null : current));
   }
 
   return (
@@ -95,7 +110,7 @@ export default function Dashboard({ initialTickets }: { initialTickets: Ticket[]
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Buscar por operadora ou número..."
+          placeholder="Buscar por protocolo, número da telecom ou do suporte..."
           className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:border-teal-500 focus:outline-none sm:max-w-xs"
         />
         <div className="flex flex-wrap gap-2">
@@ -117,7 +132,7 @@ export default function Dashboard({ initialTickets }: { initialTickets: Ticket[]
         <TicketForm
           defaultSolicitante={userName ?? ""}
           onClose={() => setShowForm(false)}
-          onCreated={handleTicketCreated}
+          onSaved={handleTicketCreated}
         />
       )}
 
@@ -127,6 +142,8 @@ export default function Dashboard({ initialTickets }: { initialTickets: Ticket[]
           ticket={selectedTicket}
           defaultAutor={userName ?? ""}
           onClose={() => setSelectedId(null)}
+          onUpdated={handleTicketUpdated}
+          onDeleted={handleTicketDeleted}
         />
       )}
     </div>

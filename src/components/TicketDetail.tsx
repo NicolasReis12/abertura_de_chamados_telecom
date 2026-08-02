@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabase/client";
 import { STATUS_OPTIONS, type Status, type Ticket, type TicketUpdateRow } from "@/lib/types";
 import StatusBadge from "./StatusBadge";
 import PriorityBadge from "./PriorityBadge";
+import TicketForm from "./TicketForm";
 import { formatDateTime } from "@/lib/format";
 import { validateNovaAtualizacao } from "@/lib/validation";
 import { setStoredName } from "@/lib/localName";
@@ -13,16 +14,22 @@ interface Props {
   ticket: Ticket;
   defaultAutor: string;
   onClose: () => void;
+  onUpdated: (ticket: Ticket) => void;
+  onDeleted: (id: string) => void;
 }
 
 const inputClass =
   "w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:border-teal-500 focus:outline-none";
 
-export default function TicketDetail({ ticket, defaultAutor, onClose }: Props) {
+export default function TicketDetail({ ticket, defaultAutor, onClose, onUpdated, onDeleted }: Props) {
   const [updates, setUpdates] = useState<TicketUpdateRow[]>([]);
   const [loadingUpdates, setLoadingUpdates] = useState(true);
   const [changingStatus, setChangingStatus] = useState(false);
   const [statusError, setStatusError] = useState<string | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const [texto, setTexto] = useState("");
   // `defaultAutor` is only used as the initial value: this component remounts
@@ -86,6 +93,24 @@ export default function TicketDetail({ ticket, defaultAutor, onClose }: Props) {
     }
   }
 
+  async function handleDelete() {
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      const res = await fetch(`/api/tickets/${ticket.id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const body = await res.json();
+        setDeleteError(body.error ?? "Não foi possível excluir o chamado.");
+        setDeleting(false);
+        return;
+      }
+      onDeleted(ticket.id);
+    } catch {
+      setDeleteError("Erro de conexão. Tente novamente.");
+      setDeleting(false);
+    }
+  }
+
   async function handleAddUpdate(e: FormEvent) {
     e.preventDefault();
     const errors = validateNovaAtualizacao({ texto, autor });
@@ -126,12 +151,20 @@ export default function TicketDetail({ ticket, defaultAutor, onClose }: Props) {
       >
         <div className="mb-4 flex items-start justify-between gap-3">
           <div>
-            <p className="font-mono text-xs text-slate-500">{ticket.protocolo}</p>
+            <p className="font-mono text-xs text-slate-500">#{ticket.protocolo}</p>
             <h2 className="text-lg font-semibold text-slate-100">{ticket.titulo}</h2>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-200" aria-label="Fechar">
-            ✕
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setEditing(true)}
+              className="rounded-lg px-2 py-1 text-xs font-medium text-slate-300 transition hover:bg-slate-800"
+            >
+              Editar
+            </button>
+            <button onClick={onClose} className="text-slate-400 hover:text-slate-200" aria-label="Fechar">
+              ✕
+            </button>
+          </div>
         </div>
 
         <div className="mb-4 flex flex-wrap items-center gap-2">
@@ -141,17 +174,57 @@ export default function TicketDetail({ ticket, defaultAutor, onClose }: Props) {
 
         <dl className="mb-5 grid grid-cols-2 gap-3 text-sm">
           <Info label="Solicitante" value={ticket.solicitante} />
-          <Info label="Operadora" value={ticket.operadora} />
+          <Info label="Operadora do número" value={ticket.operadora_numero ?? "—"} />
           <Info label="Número" value={ticket.numero} />
+          {ticket.operadora_problema && (
+            <Info label="Operadora com problema" value={ticket.operadora_problema} />
+          )}
           <Info label="Aberto em" value={formatDateTime(ticket.criado_em)} />
           <Info label="Última atualização" value={formatDateTime(ticket.atualizado_em)} />
         </dl>
+
+        <div className="mb-5 border-t border-slate-800 pt-4">
+          {!confirmingDelete ? (
+            <button
+              onClick={() => setConfirmingDelete(true)}
+              className="text-xs font-medium text-rose-400 transition hover:text-rose-300"
+            >
+              Excluir chamado
+            </button>
+          ) : (
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="text-xs text-slate-300">Tem certeza que deseja excluir este chamado?</span>
+              <button
+                onClick={() => setConfirmingDelete(false)}
+                disabled={deleting}
+                className="rounded-lg px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:bg-slate-800"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="rounded-lg bg-rose-500 px-3 py-1.5 text-xs font-medium text-slate-950 transition hover:bg-rose-400 disabled:opacity-60"
+              >
+                {deleting ? "Excluindo..." : "Sim, excluir"}
+              </button>
+            </div>
+          )}
+          {deleteError && <p className="mt-2 text-xs text-rose-400">{deleteError}</p>}
+        </div>
 
         {ticket.descricao && (
           <div className="mb-5">
             <p className="mb-1 text-xs font-medium text-slate-400">Descrição</p>
             <p className="whitespace-pre-wrap text-sm text-slate-200">{ticket.descricao}</p>
           </div>
+        )}
+
+        {(ticket.chamado_telecom || ticket.chamado_suporte) && (
+          <dl className="mb-5 grid grid-cols-2 gap-3 text-sm">
+            {ticket.chamado_telecom && <Info label="Chamado com telecom" value={ticket.chamado_telecom} />}
+            {ticket.chamado_suporte && <Info label="Chamado com suporte" value={ticket.chamado_suporte} />}
+          </dl>
         )}
 
         <div className="mb-5">
@@ -222,6 +295,18 @@ export default function TicketDetail({ ticket, defaultAutor, onClose }: Props) {
           </button>
         </form>
       </div>
+
+      {editing && (
+        <TicketForm
+          ticket={ticket}
+          defaultSolicitante={ticket.solicitante}
+          onClose={() => setEditing(false)}
+          onSaved={(updated) => {
+            onUpdated(updated);
+            setEditing(false);
+          }}
+        />
+      )}
     </div>
   );
 }

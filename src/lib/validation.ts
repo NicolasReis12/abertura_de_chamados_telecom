@@ -1,11 +1,19 @@
-import { OPERADORAS, PRIORIDADE_OPTIONS } from './types';
+import {
+  OPERADORA_NUMERO_OPTIONS,
+  OPERADORA_PROBLEMA_OPTIONS,
+  PRIORIDADE_OPTIONS,
+} from './types';
 
 const PRIORIDADES_VALIDAS = PRIORIDADE_OPTIONS.map((p) => p.value) as string[];
-const OPERADORAS_VALIDAS = OPERADORAS as readonly string[];
+const OPERADORA_NUMERO_VALIDAS = OPERADORA_NUMERO_OPTIONS as readonly string[];
+const OPERADORA_PROBLEMA_VALIDAS = OPERADORA_PROBLEMA_OPTIONS as readonly string[];
 
 export interface NovoChamadoInput {
   solicitante?: string;
-  operadora?: string;
+  operadoraNumero?: string;
+  operadoraProblema?: string;
+  chamadoSuporte?: string;
+  chamadoTelecom?: string;
   numero?: string;
   titulo?: string;
   descricao?: string;
@@ -19,10 +27,14 @@ export function validateNovoChamado(input: NovoChamadoInput): Record<string, str
     errors.solicitante = 'Informe o nome do solicitante.';
   }
 
-  if (!input.operadora?.trim()) {
-    errors.operadora = 'Selecione a operadora.';
-  } else if (!OPERADORAS_VALIDAS.includes(input.operadora.trim())) {
-    errors.operadora = 'Operadora inválida.';
+  if (!input.operadoraNumero?.trim()) {
+    errors.operadoraNumero = 'Selecione a operadora do número.';
+  } else if (!OPERADORA_NUMERO_VALIDAS.includes(input.operadoraNumero.trim())) {
+    errors.operadoraNumero = 'Operadora do número inválida.';
+  }
+
+  if (input.operadoraProblema?.trim() && !OPERADORA_PROBLEMA_VALIDAS.includes(input.operadoraProblema.trim())) {
+    errors.operadoraProblema = 'Operadora com problema inválida.';
   }
 
   if (!input.numero?.trim()) {
@@ -49,10 +61,6 @@ export interface NovaAtualizacaoInput {
 
 export function validateNovaAtualizacao(input: NovaAtualizacaoInput): Record<string, string> {
   const errors: Record<string, string> = {};
-
-  if (!input.texto?.trim()) {
-    errors.texto = 'Escreva o texto da atualização.';
-  }
 
   if (!input.autor?.trim()) {
     errors.autor = 'Informe quem está atualizando.';

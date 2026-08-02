@@ -5,6 +5,8 @@ const STYLES: Record<Status, string> = {
   andamento: "bg-amber-400/15 text-amber-300 ring-1 ring-inset ring-amber-400/30",
   aguardando: "bg-purple-400/15 text-purple-300 ring-1 ring-inset ring-purple-400/30",
   concluido: "bg-teal-400/15 text-teal-300 ring-1 ring-inset ring-teal-400/30",
+  aguardando_telecom: "bg-orange-400/15 text-orange-300 ring-1 ring-inset ring-orange-400/30",
+  aguardando_suporte: "bg-blue-400/15 text-blue-300 ring-1 ring-inset ring-blue-400/30",
 };
 
 const LABELS: Record<Status, string> = {
@@ -12,6 +14,8 @@ const LABELS: Record<Status, string> = {
   andamento: "Em andamento",
   aguardando: "Aguardando operadora",
   concluido: "Concluído",
+  aguardando_telecom: "Aguardando Telecom",
+  aguardando_suporte: "Aguardando Suporte",
 };
 
 export default function StatusBadge({ status }: { status: Status }) {
